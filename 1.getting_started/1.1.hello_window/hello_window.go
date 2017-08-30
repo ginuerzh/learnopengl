@@ -41,6 +41,8 @@ func main() {
 		// input
 		processInput(window)
 
+		// gl.Clear(gl.COLOR_BUFFER_BIT)
+
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		window.SwapBuffers()
 		glfw.PollEvents()
