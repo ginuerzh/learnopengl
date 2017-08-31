@@ -30,9 +30,14 @@ void main()
 
 var (
 	vertices = []float32{
-		-0.5, -0.5, 0.0, // left
-		0.5, -0.5, 0.0, // right
-		0.0, 0.5, 0.0, // top
+		// first triangle
+		-0.9, -0.5, 0.0, // left
+		-0.0, -0.5, 0.0, // right
+		-0.45, 0.5, 0.0, // top
+		// second triangle
+		0.0, -0.5, 0.0, // left
+		0.9, -0.5, 0.0, // right
+		0.45, 0.5, 0.0, // top
 	}
 )
 
@@ -52,9 +57,6 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	// there is no need to explicitly create and bind a VAO when using the compatibility profile
-	// see https://www.opengl.org/discussion_boards/showthread.php/199916-vertex-array-and-buffer-objects?p=1288280&viewfull=1#post1288280
-	// glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCompatProfile)
 
 	// glfw window creation
 	window, err := glfw.CreateWindow(800, 600, "LearnOpenGL", nil, nil)
@@ -114,7 +116,8 @@ func main() {
 		gl.UseProgram(program)
 		// seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
 		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		// now we have 6 vertices
+		gl.DrawArrays(gl.TRIANGLES, 0, 6)
 		// no need to unbind it every time
 		// gl.BindVertexArray(0);
 

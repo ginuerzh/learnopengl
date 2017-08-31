@@ -29,10 +29,17 @@ void main()
 )
 
 var (
-	vertices = []float32{
-		-0.5, -0.5, 0.0, // left
-		0.5, -0.5, 0.0, // right
-		0.0, 0.5, 0.0, // top
+	vertices1 = []float32{
+		// first triangle
+		-0.9, -0.5, 0.0, // left
+		-0.0, -0.5, 0.0, // right
+		-0.45, 0.5, 0.0, // top
+	}
+	vertices2 = []float32{
+		// second triangle
+		0.0, -0.5, 0.0, // left
+		0.9, -0.5, 0.0, // right
+		0.45, 0.5, 0.0, // top
 	}
 )
 
@@ -52,9 +59,6 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	// there is no need to explicitly create and bind a VAO when using the compatibility profile
-	// see https://www.opengl.org/discussion_boards/showthread.php/199916-vertex-array-and-buffer-objects?p=1288280&viewfull=1#post1288280
-	// glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCompatProfile)
 
 	// glfw window creation
 	window, err := glfw.CreateWindow(800, 600, "LearnOpenGL", nil, nil)
@@ -77,29 +81,37 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var vao, vbo uint32
-	gl.GenVertexArrays(1, &vao)
-	defer gl.DeleteVertexArrays(1, &vao)
+	var vao, vbo [2]uint32
+	gl.GenVertexArrays(2, &vao[0])
+	defer gl.DeleteVertexArrays(2, &vao[0])
 
-	gl.GenBuffers(1, &vbo)
-	defer gl.DeleteBuffers(1, &vbo)
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-	gl.BindVertexArray(vao)
+	gl.GenBuffers(2, &vbo[0])
+	defer gl.DeleteBuffers(2, &vbo[0])
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
-
+	// first triangle setup
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo[0]) // VAO will not record this operation state, it can be called before the VAO binding
+	gl.BindVertexArray(vao[0])
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices1)*4, gl.Ptr(vertices1), gl.STATIC_DRAW)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(0)
+	// no need to unbind at all as we directly bind a different VBO/VAO the next few lines
+	// gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	// gl.BindVertexArray(0)
 
-	// note that this is allowed,
-	// the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object
-	// so afterwards we can safely unbind
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	// second triangle setup
+	gl.BindVertexArray(vao[1])             // note that we bind to a different VAO now
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo[1]) // and a different VBO
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices2)*4, gl.Ptr(vertices2), gl.STATIC_DRAW)
+	// because the vertex data is tightly packed we can also specify 0 as the vertex attribute's stride to let OpenGL figure it out
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+	gl.EnableVertexAttribArray(0)
+	// gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	// not really necessary as well, but beware of calls that could affect VAOs while this one is bound
+	// (like binding element buffer objects, or enabling/disabling vertex attributes)
+	// gl.BindVertexArray(0)
 
-	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-	gl.BindVertexArray(0)
+	// uncomment this call to draw in wireframe polygons.
+	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
 	// render loop
 	for !window.ShouldClose() {
@@ -112,8 +124,11 @@ func main() {
 
 		// draw our first triangle
 		gl.UseProgram(program)
-		// seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-		gl.BindVertexArray(vao)
+		// draw first triangle using the data from the first VAO
+		gl.BindVertexArray(vao[0])
+		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		// then we draw the second triangle using the data from the second VAO
+		gl.BindVertexArray(vao[1])
 		gl.DrawArrays(gl.TRIANGLES, 0, 3)
 		// no need to unbind it every time
 		// gl.BindVertexArray(0);
