@@ -30,9 +30,15 @@ void main()
 
 var (
 	vertices = []float32{
-		-0.5, -0.5, 0.0, // left
-		0.5, -0.5, 0.0, // right
-		0.0, 0.5, 0.0, // top
+		0.5, 0.5, 0.0, // top right
+		0.5, -0.5, 0.0, // bottom right
+		-0.5, -0.5, 0.0, // bottom left
+		-0.5, 0.5, 0.0, // top left
+	}
+
+	indices = []uint32{
+		0, 1, 3, // first Triangle
+		1, 2, 3, // second Triangle
 	}
 )
 
@@ -74,18 +80,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var vao, vbo uint32
+	var vao, vbo, ebo uint32
 	gl.GenVertexArrays(1, &vao)
 	defer gl.DeleteVertexArrays(1, &vao)
 
 	gl.GenBuffers(1, &vbo)
 	defer gl.DeleteBuffers(1, &vbo)
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+
+	gl.GenBuffers(1, &ebo)
+	defer gl.DeleteBuffers(1, &ebo)
+
+	// bind the Vertex Array Object first.
 	gl.BindVertexArray(vao)
 
+	// bind and set vertex buffer object.
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
+	// bind and set element buffer object buffer.
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*6, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	// and then configure vertex attributes(s).
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(0)
 
@@ -94,9 +110,16 @@ func main() {
 	// so afterwards we can safely unbind
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 
+	// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO;
+	// keep the EBO bound.
+	// gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+
 	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	gl.BindVertexArray(0)
+
+	// uncomment this call to draw in wireframe polygons.
+	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
 	// render loop
 	for !window.ShouldClose() {
@@ -111,7 +134,11 @@ func main() {
 		gl.UseProgram(program)
 		// seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
 		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+
+		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, gl.PtrOffset(0))
+
+		// gl.DrawArrays(gl.LINE_LOOP, 0, 4)
+
 		// no need to unbind it every time
 		// gl.BindVertexArray(0);
 
