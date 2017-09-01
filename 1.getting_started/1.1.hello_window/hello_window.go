@@ -7,6 +7,10 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+}
+
 func main() {
 	// glfw: initialize
 	if err := glfw.Init(); err != nil {
@@ -14,6 +18,8 @@ func main() {
 	}
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	defer glfw.Terminate()
+
+	log.Println("GLFW version:", glfw.GetVersionString())
 
 	// glfw: configure
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
@@ -35,6 +41,12 @@ func main() {
 	if err := gl.Init(); err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("OpenGL version:", gl.GoStr(gl.GetString(gl.VERSION)))
+
+	var nrAttributes int32
+	gl.GetIntegerv(gl.MAX_VERTEX_ATTRIBS, &nrAttributes)
+	log.Println("Maximum nr of vertex attributes supported:", nrAttributes)
 
 	// render loop
 	for !window.ShouldClose() {

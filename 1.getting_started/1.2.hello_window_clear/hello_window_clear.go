@@ -7,6 +7,10 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+}
+
 func main() {
 	// glfw: initialize
 	if err := glfw.Init(); err != nil {
