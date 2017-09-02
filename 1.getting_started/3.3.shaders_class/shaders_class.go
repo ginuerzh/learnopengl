@@ -1,40 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"strings"
+
+	"github.com/ginuerzh/learnopengl/utils/shader"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-)
-
-const (
-	vertexShaderSource = `
-#version 330 core
-
-layout (location = 0) in vec3 aPos; // the position variable has attribute position 0
-layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
-
-out vec3 ourColor; // output a color to the fragment shader
-
-void main()
-{
-   gl_Position = vec4(aPos, 1.0);
-   ourColor = aColor; // set ourColor to the input color we got from the vertex data
-}
-` + "\x00"
-	fragmentShaderSource = `
-#version 330 core
-
-in vec3 ourColor; // link with input(ourColor) in the vertex shader
-out vec4 FragColor;
-
-void main()
-{
-   FragColor = vec4(ourColor, 1.0f);
-}
-` + "\x00"
 )
 
 var (
@@ -82,7 +54,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	program, err := newPragram(vertexShaderSource, fragmentShaderSource)
+	shader, err := shader.NewShader("3.3.shader.vs", "3.3.shader.fs")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -116,8 +88,7 @@ func main() {
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	// gl.BindVertexArray(0)
 
-	// as we only have a single shader, we could also just activate our shader once beforehand if we want to
-	gl.UseProgram(program)
+	shader.Use()
 
 	// render loop
 	for !window.ShouldClose() {
@@ -153,58 +124,4 @@ func frameBufferSizeCallback(w *glfw.Window, width int, height int) {
 	// height will be significantly larger than specified on retina displays.
 	gl.Viewport(0, 0, int32(width), int32(height))
 	// log.Printf("frameBufferSizeCallback (%d, %d)", width, height)
-}
-
-func newPragram(vertexShaderSource string, fragmentShaderSource string) (uint32, error) {
-	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
-	if err != nil {
-		return 0, err
-	}
-
-	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return 0, err
-	}
-
-	program := gl.CreateProgram()
-	gl.AttachShader(program, vertexShader)
-	gl.AttachShader(program, fragmentShader)
-	gl.LinkProgram(program)
-
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragmentShader)
-
-	var status int32
-	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
-		logs := strings.Repeat("\x00", int(logLength+1))
-		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(logs))
-
-		return 0, fmt.Errorf("failed to link program: %v", logs)
-	}
-
-	return program, nil
-}
-
-func compileShader(source string, shaderType uint32) (uint32, error) {
-	shader := gl.CreateShader(shaderType)
-	csources, free := gl.Strs(source)
-	gl.ShaderSource(shader, 1, csources, nil)
-	free()
-	gl.CompileShader(shader)
-
-	var status int32
-	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
-		logs := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(logs))
-
-		return 0, fmt.Errorf("failed to compile %v : %v", source, logs)
-	}
-
-	return shader, nil
 }
