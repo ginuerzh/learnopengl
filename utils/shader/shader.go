@@ -46,6 +46,9 @@ func (s *Shader) Use() {
 // The number of values must be 1, 2, 3 or 4.
 // the type of values must be int32, uint32, float32 or float64
 func (s *Shader) SetUniformName(name string, v ...interface{}) error {
+	if !strings.HasSuffix(name, "\x00") {
+		name += "\x00"
+	}
 	location := gl.GetUniformLocation(s.ID, gl.Str(name))
 	return s.SetUniform(location, v...)
 }
