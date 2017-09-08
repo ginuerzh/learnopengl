@@ -13,11 +13,22 @@ import (
 
 var (
 	vertices = []float32{
-		// positions   // colors      // texture coords
-		0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
-		0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
-		-0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom left
-		-0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top left
+		// top right
+		0.5, 0.5, 0.0, // positions
+		1.0, 0.0, 0.0, // colors
+		1.0, 1.0, // texture coords
+		// bottom right
+		0.5, -0.5, 0.0,
+		0.0, 1.0, 0.0,
+		1.0, 0.0,
+		// bottom left
+		-0.5, -0.5, 0.0,
+		0.0, 0.0, 1.0,
+		0.0, 0.0,
+		// top left
+		-0.5, 0.5, 0.0,
+		1.0, 1.0, 0.0,
+		0.0, 1.0,
 	}
 	indices = []uint32{
 		0, 1, 3, // first triangle
@@ -62,7 +73,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	shader, err := shader.NewShader("4.1.texture.vs", "4.1.texture.fs")
+	shader, err := shader.NewShader("4.2.texture.vs", "4.2.texture.fs")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,21 +109,33 @@ func main() {
 	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
 	gl.EnableVertexAttribArray(2)
 
-	texture := texture.NewTexture2D()
-	// all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-	texture.Use()
+	// texture 1
+	texture1 := texture.NewTexture2D()
+	texture1.Use()
 	// set the texture wrapping parameters
-	texture.SetParameter(gl.TEXTURE_WRAP_S, gl.REPEAT)
-	texture.SetParameter(gl.TEXTURE_WRAP_T, gl.REPEAT)
+	texture1.SetParameter(gl.TEXTURE_WRAP_S, gl.REPEAT)
+	texture1.SetParameter(gl.TEXTURE_WRAP_T, gl.REPEAT)
 	// set texture filtering parameters
-	texture.SetParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	texture.SetParameter(gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	texture1.SetParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	texture1.SetParameter(gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	// load image, create texture and generate mipmaps
-	image, err := texture.Load("../../resources/textures/container.jpg", false, false)
+	image, err := texture1.Load("../../resources/textures/container.jpg", false, false)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(image.Rect, image.Stride, len(image.Pix))
+	log.Println("container.jpg", image.Rect, image.Stride, len(image.Pix))
+
+	texture2 := texture.NewTexture2D()
+	texture2.Use()
+	texture2.SetParameter(gl.TEXTURE_WRAP_S, gl.REPEAT)
+	texture2.SetParameter(gl.TEXTURE_WRAP_T, gl.REPEAT)
+	texture2.SetParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	texture2.SetParameter(gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	image, err = texture2.Load("../../resources/textures/awesomeface.jpg", false, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("awesomeface.jpg", image.Rect, image.Stride, len(image.Pix))
 
 	// note that this is allowed,
 	// the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object
@@ -124,6 +147,12 @@ func main() {
 	// gl.BindVertexArray(0)
 
 	shader.Use()
+	if err := shader.SetUniformName("texture1", 0); err != nil {
+		log.Fatal(err)
+	}
+	if err := shader.SetUniformName("texture2", 1); err != nil {
+		log.Fatal(err)
+	}
 
 	// render loop
 	for !window.ShouldClose() {
@@ -133,6 +162,12 @@ func main() {
 		// render
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		// bind textures on corresponding texture units
+		gl.ActiveTexture(gl.TEXTURE0)
+		texture1.Use()
+		gl.ActiveTexture(gl.TEXTURE1)
+		texture2.Use()
 
 		// seeing as we only have a single VAO there's no need to bind it every time.
 		// gl.BindVertexArray(vao)

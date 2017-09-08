@@ -55,7 +55,7 @@ func (s *Shader) SetUniformName(name string, v ...interface{}) error {
 
 // SetUniform sets uniform by location.
 // The number of values must be 1, 2, 3 or 4.
-// the type of values must be int32, uint32, float32 or float64
+// the type of values must be int, int32, uint32, float32 or float64
 func (s *Shader) SetUniform(uniform int32, v ...interface{}) error {
 	if uniform < 0 {
 		return errors.New("invalid uniform")
@@ -65,6 +65,16 @@ func (s *Shader) SetUniform(uniform int32, v ...interface{}) error {
 	}
 
 	switch (v[0]).(type) {
+	case int:
+		vv := make([]int32, len(v))
+		for i := range v {
+			tv, ok := v[i].(int)
+			if !ok {
+				return fmt.Errorf("invalid type of v[%d], must be int", i)
+			}
+			vv[i] = int32(tv)
+		}
+		s.SetUniformi(uniform, vv...)
 	case int32:
 		vv := make([]int32, len(v))
 		for i := range v {
@@ -105,6 +115,8 @@ func (s *Shader) SetUniform(uniform int32, v ...interface{}) error {
 			vv[i] = tv
 		}
 		s.SetUniformd(uniform, vv...)
+	default:
+		return errors.New("unsupported value type")
 	}
 
 	return nil
