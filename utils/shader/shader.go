@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Shader is a compiled shader program contains vertex and fragment shaders.
@@ -207,6 +208,26 @@ func (s *Shader) SetUniformd(uniform int32, v ...float64) error {
 		return errors.New("empty value")
 	}
 
+	return nil
+}
+
+func (s *Shader) SetUniformMatrixName(name string, transpose bool, mat interface{}) error {
+	if !strings.HasSuffix(name, "\x00") {
+		name += "\x00"
+	}
+	location := gl.GetUniformLocation(s.ID, gl.Str(name))
+	return s.SetUniformMatrix(location, transpose, mat)
+}
+
+func (s *Shader) SetUniformMatrix(uniform int32, traspose bool, mat interface{}) error {
+	switch v := mat.(type) {
+	case mgl32.Mat3:
+		gl.UniformMatrix2fv(uniform, 1, traspose, &v[0])
+	case mgl32.Mat4:
+		gl.UniformMatrix4fv(uniform, 1, traspose, &v[0])
+	default:
+		return errors.New("unsupported matrix")
+	}
 	return nil
 }
 
