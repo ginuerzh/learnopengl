@@ -112,7 +112,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	shader, err := shader.NewShader("6.3.coordinate_systems_multiple.vs", "6.3.coordinate_systems_multiple.fs")
+	shader, err := shader.NewShader("7.2.camera.vs", "7.2.camera.fs")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,10 +183,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	view := mgl32.Translate3D(0.0, 0.0, -3.0)
-	if err := shader.SetUniformMatrixName("view", false, view); err != nil {
-		log.Fatal(err)
-	}
 	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(screenWidth)/float32(screenHeight), 0.1, 100.0)
 	// projection = mgl32.Ortho(0.0, 800.0, 0.0, 600.0, 0.1, 100.0)
 	if err := shader.SetUniformMatrixName("projection", false, projection); err != nil {
@@ -197,6 +193,10 @@ func main() {
 
 	// render loop
 	for !window.ShouldClose() {
+		// per-frame time logic
+		currentFrame := float32(glfw.GetTime())
+		deltaTime = currentFrame - lastTime
+		lastTime = currentFrame
 		// input
 		processInput(window)
 
@@ -210,13 +210,14 @@ func main() {
 		gl.ActiveTexture(gl.TEXTURE1)
 		texture2.Use()
 
+		view := mgl32.LookAtV(cameraPos, cameraFront.Add(cameraPos), cameraUp)
+		if err := shader.SetUniformMatrixName("view", false, view); err != nil {
+			log.Fatal(err)
+		}
+
 		for i, pos := range cubePositions {
 			angle := 20.0 * float32(i)
 
-			// exercise 3
-			// if i%3 == 0 {
-			// 	angle = float32(glfw.GetTime() * 25.0)
-			// }
 			model := mgl32.HomogRotate3D(float32(mgl32.DegToRad(angle)), mgl32.Vec3{0.5, 1.0, 0.0})
 			model = mgl32.Translate3D(pos.Elem()).Mul4(model)
 			if err := shader.SetUniformMatrixName("model", false, model); err != nil {
@@ -231,10 +232,29 @@ func main() {
 	}
 }
 
+var (
+	deltaTime, lastTime float32
+
+	cameraPos   = mgl32.Vec3{0, 0, 3}
+	cameraFront = mgl32.Vec3{0, 0, -1}
+	cameraUp    = mgl32.Vec3{0, 1, 0}
+)
+
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 func processInput(w *glfw.Window) {
-	if w.GetKey(glfw.KeyEscape) == glfw.Press {
+	cameraSpeed := 5 * deltaTime
+
+	if w.GetKey(glfw.KeyW) == glfw.Press {
+		cameraPos = cameraPos.Add(cameraFront.Mul(cameraSpeed))
+	} else if w.GetKey(glfw.KeyS) == glfw.Press {
+		cameraPos = cameraPos.Sub(cameraFront.Mul(cameraSpeed))
+	} else if w.GetKey(glfw.KeyA) == glfw.Press {
+		cameraPos = cameraPos.Sub(cameraFront.Cross(cameraUp).Normalize().Mul(cameraSpeed))
+	} else if w.GetKey(glfw.KeyD) == glfw.Press {
+		cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(cameraSpeed))
+	} else if w.GetKey(glfw.KeyEscape) == glfw.Press {
 		w.SetShouldClose(true)
+	} else {
 	}
 }
 

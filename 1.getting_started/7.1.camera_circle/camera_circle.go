@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"runtime"
 
 	"github.com/ginuerzh/learnopengl/utils/shader"
@@ -112,7 +113,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	shader, err := shader.NewShader("6.3.coordinate_systems_multiple.vs", "6.3.coordinate_systems_multiple.fs")
+	shader, err := shader.NewShader("7.1.camera.vs", "7.1.camera.fs")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,10 +184,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	view := mgl32.Translate3D(0.0, 0.0, -3.0)
-	if err := shader.SetUniformMatrixName("view", false, view); err != nil {
-		log.Fatal(err)
-	}
 	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(screenWidth)/float32(screenHeight), 0.1, 100.0)
 	// projection = mgl32.Ortho(0.0, 800.0, 0.0, 600.0, 0.1, 100.0)
 	if err := shader.SetUniformMatrixName("projection", false, projection); err != nil {
@@ -210,13 +207,21 @@ func main() {
 		gl.ActiveTexture(gl.TEXTURE1)
 		texture2.Use()
 
+		radius := 10.0
+		camX := math.Sin(glfw.GetTime()) * radius
+		camZ := math.Cos(glfw.GetTime()) * radius
+		view := mgl32.LookAtV(
+			mgl32.Vec3{float32(camX), 0, float32(camZ)},
+			mgl32.Vec3{},
+			mgl32.Vec3{0, 1, 0},
+		)
+		if err := shader.SetUniformMatrixName("view", false, view); err != nil {
+			log.Fatal(err)
+		}
+
 		for i, pos := range cubePositions {
 			angle := 20.0 * float32(i)
 
-			// exercise 3
-			// if i%3 == 0 {
-			// 	angle = float32(glfw.GetTime() * 25.0)
-			// }
 			model := mgl32.HomogRotate3D(float32(mgl32.DegToRad(angle)), mgl32.Vec3{0.5, 1.0, 0.0})
 			model = mgl32.Translate3D(pos.Elem()).Mul4(model)
 			if err := shader.SetUniformMatrixName("model", false, model); err != nil {

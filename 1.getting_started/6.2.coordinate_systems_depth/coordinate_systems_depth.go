@@ -176,7 +176,7 @@ func main() {
 		log.Fatal(err)
 	}
 	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(screenWidth)/float32(screenHeight), 0.1, 100.0)
-	// projection = mgl32.Ortho(0.0, 800.0, 0.0, 600.0, 0.1, 100.0)
+	// projection = mgl32.Ortho(-5.0, 5.0, -4.0, 3.0, 0.1, 10.0)
 	if err := shader.SetUniformMatrixName("projection", false, projection); err != nil {
 		log.Fatal(err)
 	}
